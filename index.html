@@ -66,7 +66,6 @@
       background: rgba(0,0,0,0.6);
       color: white; font-size: 16px; font-weight: 600;
     }
-
   </style>
 </head>
 
@@ -103,81 +102,95 @@
 </div>
 
 <script>
-/* ------------------- إعدادات اللعبة ------------------- */
-
+/* ------------------- Canvas ------------------- */
 const canvas = document.getElementById("game");
 const ctx = canvas.getContext("2d");
-canvas.width = 400; canvas.height = 650;
+canvas.width = 400; 
+canvas.height = 650;
 
-const GAME_WIDTH = 400;
-const GAME_HEIGHT = 650;
-const GROUND_Y = GAME_HEIGHT - 100;
+let GAME_WIDTH = 400;
+let GAME_HEIGHT = 650;
+let GROUND_Y = GAME_HEIGHT - 100;
 
-/* ------------------- المسارات ------------------- */
-let lanes = [
-  GAME_WIDTH * 0.2,
-  GAME_WIDTH * 0.5,
-  GAME_WIDTH * 0.8
-];
+/* ------------------- Dynamic Lanes ------------------- */
+let lanes = [];
 
-/* ------------------- اللاعب ------------------- */
+function updateLanes() {
+  const w = canvas.width;
+  lanes = [
+    w * 0.25,
+    w * 0.5,
+    w * 0.75
+  ];
+}
+updateLanes();
+
+/* ------------------- Player ------------------- */
 let player = {
   laneIndex: 1,
   width: 40,
   height: 60,
-  x: lanes[1] - 40/2,
-  targetX: lanes[1] - 40/2,
+  x: lanes[1] - 20,
+  targetX: lanes[1] - 20,
   y: GROUND_Y,
   baseY: GROUND_Y,
   vy: 0,
   isJumping: false
 };
 
-/* ------------------- متغيرات اللعبة ------------------- */
+/* ------------------- Game State ------------------- */
 let obstacles = [];
 let score = 0;
 let level = 1;
 let lives = 3;
-
 let bestScore = parseInt(localStorage.getItem("bestScore") || "0", 10);
 
-/* ------------------- الأصوات ------------------- */
-let audioCtx=null;
-function play(freq, duration=150) {
-  if(!audioCtx) audioCtx=new (window.AudioContext||window.webkitAudioContext)();
-  const o=audioCtx.createOscillator(), g=audioCtx.createGain();
-  o.frequency.value=freq; o.connect(g); g.connect(audioCtx.destination);
-  o.start(); o.stop(audioCtx.currentTime+duration/1000);
+/* ------------------- Sounds ------------------- */
+let audioCtx = null;
+function playSound(freq, duration = 150){
+  if(!audioCtx) audioCtx = new (window.AudioContext||window.webkitAudioContext)();
+  const o = audioCtx.createOscillator();
+  const g = audioCtx.createGain();
+  o.frequency.value = freq;
+  o.connect(g);
+  g.connect(audioCtx.destination);
+  o.start();
+  o.stop(audioCtx.currentTime + duration/1000);
 }
 
-/* ------------------- تحديث الواجهة ------------------- */
+/* ------------------- HUD ------------------- */
 function updateHUD(){
-  document.getElementById("score").textContent="النقاط: "+score;
-  document.getElementById("level").textContent="المستوى: "+level;
-  document.getElementById("lives").textContent="❤️".repeat(lives);
-  document.getElementById("best").textContent="أفضل: "+bestScore;
+  document.getElementById("score").textContent = "النقاط: " + score;
+  document.getElementById("level").textContent = "المستوى: " + level;
+  document.getElementById("lives").textContent = "❤️".repeat(lives);
+  document.getElementById("best").textContent = "أفضل: " + bestScore;
 }
 
-/* ------------------- إعادة اللعبة ------------------- */
+/* ------------------- Reset ------------------- */
 function resetGame(){
-  score=0; level=1; lives=3;
-  obstacles=[];
-  player.laneIndex=1;
+  score = 0; level = 1; lives = 3;
+  obstacles = [];
+
+  updateLanes();
+
+  player.laneIndex = 1;
   player.x = lanes[1] - player.width/2;
   player.targetX = player.x;
   player.y = GROUND_Y;
   player.baseY = GROUND_Y;
   player.vy = 0;
   player.isJumping = false;
+
   updateHUD();
 }
 
-/* ------------------- توليد العقبات ------------------- */
-let spawnInterval = 1000, lastSpawn = 0;
+/* ------------------- Obstacles ------------------- */
+let lastSpawn = 0;
+let spawnInterval = 1200;
 
-function spawnObstacle(time){
-  if(time-lastSpawn < spawnInterval) return;
-  lastSpawn = time;
+function spawnObstacle(t){
+  if(t - lastSpawn < spawnInterval) return;
+  lastSpawn = t;
 
   let laneIndex = Math.floor(Math.random()*3);
   let isEven = Math.random() < 0.5;
@@ -191,11 +204,11 @@ function spawnObstacle(time){
     height: 40,
     value,
     isEven,
-    speed: 2.5 + Math.random()*1.5
+    speed: 3 + Math.random()*1.5
   });
 }
 
-/* ------------------- حركة اللاعب يمين/يسار ------------------- */
+/* ------------------- Movement ------------------- */
 function movePlayer(dir){
   if(dir==="left" && player.laneIndex>0) player.laneIndex--;
   if(dir==="right" && player.laneIndex<2) player.laneIndex++;
@@ -203,15 +216,14 @@ function movePlayer(dir){
   player.targetX = lanes[player.laneIndex] - player.width/2;
 }
 
-/* ------------------- القفز ------------------- */
 function jump(){
   if(player.isJumping) return;
   player.isJumping = true;
+  playSound(700);
   player.vy = -10;
-  play(600);
 }
 
-/* ------------------- رسم اللاعب ------------------- */
+/* ------------------- Drawing ------------------- */
 function drawPlayer(){
   const {x,y,width,height} = player;
 
@@ -224,7 +236,7 @@ function drawPlayer(){
   // شعر
   ctx.fillStyle="#5d4037";
   ctx.beginPath();
-  ctx.arc(x+width/2, y+16, 18, Math.PI, 0);
+  ctx.arc(x+width/2, y+16, 18, Math.PI);
   ctx.fill();
 
   // جسم
@@ -237,7 +249,6 @@ function drawPlayer(){
   ctx.fillRect(x+width-18, y+height-20, 10, 20);
 }
 
-/* ------------------- رسم العقبات ------------------- */
 function drawObstacles(){
   obstacles.forEach(o=>{
     const x = lanes[o.laneIndex] - o.width/2;
@@ -249,29 +260,29 @@ function drawObstacles(){
   });
 }
 
-/* ------------------- التصادم ------------------- */
+/* ------------------- Collision ------------------- */
 function collide(a,b){
   return !(a.x+a.width<b.x || a.x>b.x+b.width ||
            a.y+a.height<b.y || a.y>b.y+b.height);
 }
 
-/* ------------------- حلقة اللعبة ------------------- */
+/* ------------------- Game Loop ------------------- */
 let gameRunning=false;
 let lastTime=0;
 
-function gameLoop(time){
+function gameLoop(t){
   if(!gameRunning) return;
 
-  const delta = time-lastTime; lastTime=time;
+  const delta = t-lastTime; lastTime=t;
 
   ctx.clearRect(0,0,GAME_WIDTH,GAME_HEIGHT);
 
-  // حركة اللاعب يمين/يسار
+  // حركة أفقية سلسة
   player.x += (player.targetX - player.x) * 0.25;
 
   // فيزياء القفز
   if(player.isJumping){
-    player.vy += 0.5;
+    player.vy += 0.45;
     player.y += player.vy;
     if(player.y >= player.baseY){
       player.y = player.baseY;
@@ -280,28 +291,27 @@ function gameLoop(time){
     }
   }
 
-  // توليد العقبات
-  spawnObstacle(time);
+  // عقبات
+  spawnObstacle(t);
 
-  // تحريك العقبات ومعالجة التصادم
-  for(let i=obstacles.length-1; i>=0; i--){
+  for(let i=obstacles.length-1;i>=0;i--){
     let o = obstacles[i];
     o.y += o.speed;
 
-    let pr = {x:player.x, y:player.y, width:player.width, height:player.height};
-    let or = {x:lanes[o.laneIndex]-20, y:o.y, width:o.width, height:o.height};
+    let pr = {x:player.x,y:player.y,width:player.width,height:player.height};
+    let or = {x:lanes[o.laneIndex]-20,y:o.y,width:o.width,height:o.height};
 
-    const jumping = player.isJumping && player.y < player.baseY - 20;
+    let jumping = player.isJumping && player.y < player.baseY - 25;
 
     if(collide(pr,or)){
-      if(jumping){
-        obstacles.splice(i,1);
-        continue;
-      }
+      if(jumping){ obstacles.splice(i,1); continue; }
+
       if(o.isEven){
-        score+=10; play(800);
-      } else {
-        lives--; play(200);
+        score += 10;
+        playSound(900);
+      }else{
+        lives--;
+        playSound(200);
         if(lives<=0){ endGame(); return; }
       }
       updateHUD();
@@ -309,32 +319,36 @@ function gameLoop(time){
     }
 
     if(o.y > GAME_HEIGHT+40){
-      if(o.isEven){ lives--; play(200); updateHUD(); }
+      if(o.isEven){
+        lives--;
+        playSound(200);
+        if(lives<=0){ endGame(); return; }
+      }
       obstacles.splice(i,1);
+      updateHUD();
     }
   }
 
-  // رسم
   drawPlayer();
   drawObstacles();
 
   requestAnimationFrame(gameLoop);
 }
 
-/* ------------------- نهاية اللعبة ------------------- */
+/* ------------------- End Game ------------------- */
 function endGame(){
   gameRunning=false;
   document.getElementById("gameover-screen").style.display="flex";
   document.getElementById("final-score").textContent="نقاطك: "+score;
   if(score>bestScore){
     bestScore=score;
-    localStorage.setItem("bestScore", bestScore);
+    localStorage.setItem("bestScore",bestScore);
   }
   document.getElementById("final-best").textContent="أفضل نتيجة: "+bestScore;
-  play(140);
+  playSound(120);
 }
 
-/* ------------------- بدء اللعبة ------------------- */
+/* ------------------- Start ------------------- */
 function startGame(){
   resetGame();
   document.getElementById("start-screen").style.display="none";
@@ -343,8 +357,8 @@ function startGame(){
   requestAnimationFrame(gameLoop);
 }
 
-/* ------------------- التحكم ------------------- */
-window.addEventListener("keydown",(e)=>{
+/* ------------------- Controls ------------------- */
+window.addEventListener("keydown", e=>{
   if(!gameRunning){
     if(e.key===" "||e.key==="Enter"){ startGame(); }
     return;
@@ -358,7 +372,13 @@ document.getElementById("left-btn").onclick=()=>movePlayer("left");
 document.getElementById("right-btn").onclick=()=>movePlayer("right");
 document.getElementById("jump-btn").onclick=()=>jump();
 
-/* ------------------- زر البداية ------------------- */
+/* ------------------- لنافذة تغيير الحجم ------------------- */
+window.addEventListener("resize", ()=>{
+  updateLanes();
+  player.x = lanes[player.laneIndex] - player.width/2;
+  player.targetX = player.x;
+});
+
 document.getElementById("start-btn").onclick=startGame;
 document.getElementById("retry-btn").onclick=startGame;
 document.getElementById("back-btn").onclick=()=>{
