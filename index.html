@@ -5,758 +5,367 @@
   <title>Number Runner Plus</title>
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
   <style>
-    * {
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0;
-    }
-
+    * { box-sizing: border-box; margin: 0; padding: 0; }
     body {
       background: #111;
-      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      font-family: system-ui, sans-serif;
       display: flex;
       justify-content: center;
       align-items: center;
       height: 100vh;
       overflow: hidden;
       direction: rtl;
-      touch-action: manipulation;
-      -webkit-tap-highlight-color: transparent;
-      overscroll-behavior: contain;
     }
 
     #game-container {
       position: relative;
-      width: 400px;
-      max-width: 100vw;
-      height: 650px;
-      max-height: 100vh;
+      width: 400px; height: 650px;
+      max-width: 100vw; max-height: 100vh;
       background: linear-gradient(#111, #222);
       border-radius: 16px;
       overflow: hidden;
-      box-shadow: 0 0 25px rgba(0, 0, 0, 0.8);
+      box-shadow: 0 0 25px rgba(0,0,0,0.8);
     }
 
-    canvas {
-      display: block;
-      width: 100%;
-      height: 100%;
-      background: #222;
-    }
+    canvas { width: 100%; height: 100%; background: #222; display: block; }
 
     .overlay {
-      position: absolute;
-      inset: 0;
-      display: flex;
-      flex-direction: column;
-      justify-content: center;
-      align-items: center;
-      background: radial-gradient(circle at top, rgba(0, 200, 100, 0.2), #000);
-      color: #fff;
-      text-align: center;
-      padding: 20px;
-      z-index: 10;
-    }
-
-    .overlay h1 {
-      font-size: 28px;
-      margin-bottom: 10px;
-    }
-
-    .overlay p {
-      font-size: 14px;
-      margin-bottom: 15px;
-      opacity: 0.8;
+      position: absolute; inset: 0;
+      display: flex; flex-direction: column;
+      justify-content: center; align-items: center;
+      background: radial-gradient(circle at top, rgba(0,200,100,0.2), #000);
+      color: #fff; z-index: 10;
+      text-align: center; padding: 20px;
     }
 
     .btn {
-      padding: 10px 20px;
-      margin: 5px;
-      border-radius: 999px;
-      border: none;
-      font-size: 14px;
+      padding: 10px 25px; margin: 6px;
+      border-radius: 999px; border: none;
+      background: #00c853; color: #fff;
+      font-size: 14px; font-weight: 600;
       cursor: pointer;
-      background: #00c853;
-      color: #fff;
-      font-weight: 600;
-      box-shadow: 0 4px 10px rgba(0, 200, 83, 0.5);
-      transition: transform 0.1s, box-shadow 0.1s, background 0.1s;
-      min-width: 120px;
     }
 
-    .btn:active {
-      transform: translateY(1px) scale(0.98);
-      box-shadow: 0 2px 6px rgba(0, 200, 83, 0.3);
-    }
-
-    .btn.secondary {
-      background: #424242;
-      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.5);
-    }
+    .btn.secondary { background: #424242; }
 
     #hud {
-      position: absolute;
-      top: 8px;
-      left: 8px;
-      right: 8px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      color: #fff;
-      font-size: 13px;
-      z-index: 5;
-      pointer-events: none;
-    }
-
-    #hud div {
-      pointer-events: none;
+      position: absolute; top: 8px; left: 8px; right: 8px;
+      display: flex; justify-content: space-between;
+      color: #fff; font-size: 13px; z-index: 5;
     }
 
     #mobile-controls {
-      position: absolute;
-      bottom: 10px;
-      left: 0;
-      right: 0;
-      display: flex;
-      justify-content: space-around;
-      z-index: 6;
-      padding: 0 10px;
-      gap: 10px;
+      position: absolute; bottom: 10px; left: 0; right: 0;
+      display: flex; justify-content: space-around;
+      padding: 0 10px; gap: 10px; z-index: 6;
     }
 
     .control-btn {
-      flex: 1;
-      padding: 12px 0;
-      border-radius: 999px;
-      border: none;
-      font-size: 16px;
-      font-weight: 600;
-      background: rgba(0, 0, 0, 0.6);
-      color: #fff;
-      cursor: pointer;
-      user-select: none;
-      touch-action: manipulation;
+      flex: 1; padding: 12px 0;
+      border-radius: 999px; border: none;
+      background: rgba(0,0,0,0.6);
+      color: white; font-size: 16px; font-weight: 600;
     }
 
-    .control-btn:active {
-      background: rgba(0, 200, 83, 0.7);
-    }
-
-    @media (max-width: 480px) {
-      #game-container {
-        width: 100vw;
-        height: 100vh;
-        border-radius: 0;
-      }
-    }
   </style>
 </head>
+
 <body>
-  <div id="game-container">
-    <canvas id="game"></canvas>
+<div id="game-container">
+  <canvas id="game"></canvas>
 
-    <!-- HUD -->
-    <div id="hud">
-      <div id="score">النقاط: 0</div>
-      <div id="level">المستوى: 1</div>
-      <div id="lives">❤️❤️❤️</div>
-      <div id="best">أفضل: 0</div>
-    </div>
-
-    <!-- Start Screen -->
-    <div id="start-screen" class="overlay">
-      <h1>Number Runner 🏃‍♂️</h1>
-      <p>
-        تحرّك بين المسارات الثلاثة<br />
-        ✅ التقط الأعداد <b>الزوجية</b><br />
-        ❌ وتجنّب الأعداد <b>الفردية</b><br />
-        اقفز فوق العقبات وواجه السرعة المتزايدة!
-      </p>
-      <button class="btn" id="start-btn">ابدأ اللعبة</button>
-      <button class="btn secondary" id="how-btn">طريقة اللعب</button>
-      <p style="margin-top:10px;font-size:12px;opacity:0.7;">
-        الحركات: الأسهم ◀ ▶، سهم ↑ أو Space للقفز، أو الأزرار في الأسفل على الجوال.
-      </p>
-    </div>
-
-    <!-- Game Over Screen -->
-    <div id="gameover-screen" class="overlay" style="display:none;">
-      <h1>انتهت اللعبة 💥</h1>
-      <p id="final-score">نقاطك: 0</p>
-      <p id="final-best">أفضل نتيجة: 0</p>
-      <button class="btn" id="retry-btn">إعادة اللعب</button>
-      <button class="btn secondary" id="back-btn">رجوع للقائمة</button>
-    </div>
-
-    <!-- Mobile Controls -->
-    <div id="mobile-controls">
-      <button class="control-btn" id="left-btn">◀ يسار</button>
-      <button class="control-btn" id="jump-btn">قفز ⬆</button>
-      <button class="control-btn" id="right-btn">يمين ▶</button>
-    </div>
+  <div id="hud">
+    <div id="score">النقاط: 0</div>
+    <div id="level">المستوى: 1</div>
+    <div id="lives">❤️❤️❤️</div>
+    <div id="best">أفضل: 0</div>
   </div>
 
-  <script>
-    // ===== Canvas Setup =====
-    const canvas = document.getElementById("game");
-    const ctx = canvas.getContext("2d");
+  <div id="start-screen" class="overlay">
+    <h1>Number Runner 🏃‍♂️</h1>
+    <p>تحرّك بين المسارات — التقط الأزرق وتجنب الأحمر — اقفز فوق العقبات!</p>
+    <button class="btn" id="start-btn">ابدأ اللعبة</button>
+  </div>
 
-    const GAME_WIDTH = 400;
-    const GAME_HEIGHT = 650;
-    canvas.width = GAME_WIDTH;
-    canvas.height = GAME_HEIGHT;
+  <div id="gameover-screen" class="overlay" style="display:none;">
+    <h1>انتهت اللعبة 💥</h1>
+    <p id="final-score">نقاطك: 0</p>
+    <p id="final-best">أفضل نتيجة: 0</p>
+    <button class="btn" id="retry-btn">إعادة اللعب</button>
+    <button class="btn secondary" id="back-btn">رجوع</button>
+  </div>
 
-    // ===== Elements =====
-    const startScreen = document.getElementById("start-screen");
-    const gameoverScreen = document.getElementById("gameover-screen");
-    const startBtn = document.getElementById("start-btn");
-    const howBtn = document.getElementById("how-btn");
-    const retryBtn = document.getElementById("retry-btn");
-    const backBtn = document.getElementById("back-btn");
+  <div id="mobile-controls">
+    <button class="control-btn" id="left-btn">◀</button>
+    <button class="control-btn" id="jump-btn">⬆</button>
+    <button class="control-btn" id="right-btn">▶</button>
+  </div>
+</div>
 
-    const scoreEl = document.getElementById("score");
-    const levelEl = document.getElementById("level");
-    const livesEl = document.getElementById("lives");
-    const bestEl = document.getElementById("best");
-    const finalScoreEl = document.getElementById("final-score");
-    const finalBestEl = document.getElementById("final-best");
+<script>
+/* ------------------- إعدادات اللعبة ------------------- */
 
-    const leftBtn = document.getElementById("left-btn");
-    const rightBtn = document.getElementById("right-btn");
-    const jumpBtn = document.getElementById("jump-btn");
+const canvas = document.getElementById("game");
+const ctx = canvas.getContext("2d");
+canvas.width = 400; canvas.height = 650;
 
-    // ===== Game State =====
-    const GROUND_Y = GAME_HEIGHT - 90;
+const GAME_WIDTH = 400;
+const GAME_HEIGHT = 650;
+const GROUND_Y = GAME_HEIGHT - 100;
 
-    let lanes = [GAME_WIDTH * 0.2, GAME_WIDTH * 0.5, GAME_WIDTH * 0.8]; // 3 مسارات
+/* ------------------- المسارات ------------------- */
+let lanes = [
+  GAME_WIDTH * 0.2,
+  GAME_WIDTH * 0.5,
+  GAME_WIDTH * 0.8
+];
 
-    let player = {
-      laneIndex: 1,
-      x: lanes[1] - 20,
-      targetX: lanes[1] - 20,
-      y: GROUND_Y,
-      baseY: GROUND_Y,
-      width: 40,
-      height: 60,
-      vy: 0,
-      isJumping: false
-    };
+/* ------------------- اللاعب ------------------- */
+let player = {
+  laneIndex: 1,
+  width: 40,
+  height: 60,
+  x: lanes[1] - 40/2,
+  targetX: lanes[1] - 40/2,
+  y: GROUND_Y,
+  baseY: GROUND_Y,
+  vy: 0,
+  isJumping: false
+};
 
-    let obstacles = [];
-    let score = 0;
-    let level = 1;
-    let lives = 3;
-    let bestScore = parseInt(localStorage.getItem("numberRunnerBest") || "0", 10);
-    bestEl.textContent = "أفضل: " + bestScore;
+/* ------------------- متغيرات اللعبة ------------------- */
+let obstacles = [];
+let score = 0;
+let level = 1;
+let lives = 3;
 
-    let gameRunning = false;
-    let lastSpawnTime = 0;
-    let spawnInterval = 1200;
-    let speedBase = 2.3;
+let bestScore = parseInt(localStorage.getItem("bestScore") || "0", 10);
 
-    // Screen shake
-    let shakeActive = false;
-    let shakeEndTime = 0;
-    let shakeMagnitude = 0;
+/* ------------------- الأصوات ------------------- */
+let audioCtx=null;
+function play(freq, duration=150) {
+  if(!audioCtx) audioCtx=new (window.AudioContext||window.webkitAudioContext)();
+  const o=audioCtx.createOscillator(), g=audioCtx.createGain();
+  o.frequency.value=freq; o.connect(g); g.connect(audioCtx.destination);
+  o.start(); o.stop(audioCtx.currentTime+duration/1000);
+}
 
-    function startShake(duration = 250, magnitude = 6) {
-      shakeActive = true;
-      shakeEndTime = performance.now() + duration;
-      shakeMagnitude = magnitude;
-    }
+/* ------------------- تحديث الواجهة ------------------- */
+function updateHUD(){
+  document.getElementById("score").textContent="النقاط: "+score;
+  document.getElementById("level").textContent="المستوى: "+level;
+  document.getElementById("lives").textContent="❤️".repeat(lives);
+  document.getElementById("best").textContent="أفضل: "+bestScore;
+}
 
-    // ===== Simple Sound Effects (Web Audio) =====
-    let audioCtx = null;
-    function getAudioCtx() {
-      if (!audioCtx) {
-        const AC = window.AudioContext || window.webkitAudioContext;
-        if (!AC) return null;
-        audioCtx = new AC();
-      }
-      return audioCtx;
-    }
+/* ------------------- إعادة اللعبة ------------------- */
+function resetGame(){
+  score=0; level=1; lives=3;
+  obstacles=[];
+  player.laneIndex=1;
+  player.x = lanes[1] - player.width/2;
+  player.targetX = player.x;
+  player.y = GROUND_Y;
+  player.baseY = GROUND_Y;
+  player.vy = 0;
+  player.isJumping = false;
+  updateHUD();
+}
 
-    function playBeep(freq, duration = 150, type = "sine", volume = 0.2) {
-      const ctxAudio = getAudioCtx();
-      if (!ctxAudio) return;
-      const osc = ctxAudio.createOscillator();
-      const gain = ctxAudio.createGain();
-      osc.type = type;
-      osc.frequency.setValueAtTime(freq, ctxAudio.currentTime);
-      gain.gain.setValueAtTime(volume, ctxAudio.currentTime);
-      osc.connect(gain);
-      gain.connect(ctxAudio.destination);
-      osc.start();
-      osc.stop(ctxAudio.currentTime + duration / 1000);
-    }
+/* ------------------- توليد العقبات ------------------- */
+let spawnInterval = 1000, lastSpawn = 0;
 
-    function playCollectSound() {
-      playBeep(800, 120, "triangle", 0.25);
-    }
+function spawnObstacle(time){
+  if(time-lastSpawn < spawnInterval) return;
+  lastSpawn = time;
 
-    function playHitSound() {
-      playBeep(200, 200, "square", 0.3);
-    }
+  let laneIndex = Math.floor(Math.random()*3);
+  let isEven = Math.random() < 0.5;
+  let value = isEven ? (2 * (1+Math.floor(Math.random()*9)))
+                     : (1 + 2*Math.floor(Math.random()*9));
 
-    function playJumpSound() {
-      playBeep(550, 120, "sine", 0.25);
-    }
+  obstacles.push({
+    laneIndex,
+    y: -40,
+    width: 40,
+    height: 40,
+    value,
+    isEven,
+    speed: 2.5 + Math.random()*1.5
+  });
+}
 
-    function playGameOverSound() {
-      playBeep(140, 500, "sawtooth", 0.25);
-    }
+/* ------------------- حركة اللاعب يمين/يسار ------------------- */
+function movePlayer(dir){
+  if(dir==="left" && player.laneIndex>0) player.laneIndex--;
+  if(dir==="right" && player.laneIndex<2) player.laneIndex++;
 
-    // ===== Helper Functions =====
-    function resetGame() {
-      score = 0;
-      level = 1;
-      lives = 3;
-      obstacles = [];
-      player.laneIndex = 1;
-      player.x = lanes[1] - player.width / 2;
-      player.targetX = player.x;
-      player.y = GROUND_Y;
-      player.baseY = GROUND_Y;
+  player.targetX = lanes[player.laneIndex] - player.width/2;
+}
+
+/* ------------------- القفز ------------------- */
+function jump(){
+  if(player.isJumping) return;
+  player.isJumping = true;
+  player.vy = -10;
+  play(600);
+}
+
+/* ------------------- رسم اللاعب ------------------- */
+function drawPlayer(){
+  const {x,y,width,height} = player;
+
+  // رأس
+  ctx.beginPath();
+  ctx.fillStyle="#ffcc80";
+  ctx.arc(x+width/2, y+20, 18, 0, Math.PI*2);
+  ctx.fill();
+
+  // شعر
+  ctx.fillStyle="#5d4037";
+  ctx.beginPath();
+  ctx.arc(x+width/2, y+16, 18, Math.PI, 0);
+  ctx.fill();
+
+  // جسم
+  ctx.fillStyle="#1e88e5";
+  ctx.fillRect(x+8, y+35, width-16, height-40);
+
+  // أرجل
+  ctx.fillStyle="#212121";
+  ctx.fillRect(x+8, y+height-20, 10, 20);
+  ctx.fillRect(x+width-18, y+height-20, 10, 20);
+}
+
+/* ------------------- رسم العقبات ------------------- */
+function drawObstacles(){
+  obstacles.forEach(o=>{
+    const x = lanes[o.laneIndex] - o.width/2;
+    ctx.fillStyle = o.isEven ? "#2962ff" : "#d50000";
+    ctx.fillRect(x, o.y, o.width, o.height);
+    ctx.fillStyle="#fff";
+    ctx.font="bold 16px sans-serif";
+    ctx.fillText(o.value, x+20, o.y+22);
+  });
+}
+
+/* ------------------- التصادم ------------------- */
+function collide(a,b){
+  return !(a.x+a.width<b.x || a.x>b.x+b.width ||
+           a.y+a.height<b.y || a.y>b.y+b.height);
+}
+
+/* ------------------- حلقة اللعبة ------------------- */
+let gameRunning=false;
+let lastTime=0;
+
+function gameLoop(time){
+  if(!gameRunning) return;
+
+  const delta = time-lastTime; lastTime=time;
+
+  ctx.clearRect(0,0,GAME_WIDTH,GAME_HEIGHT);
+
+  // حركة اللاعب يمين/يسار
+  player.x += (player.targetX - player.x) * 0.25;
+
+  // فيزياء القفز
+  if(player.isJumping){
+    player.vy += 0.5;
+    player.y += player.vy;
+    if(player.y >= player.baseY){
+      player.y = player.baseY;
       player.vy = 0;
       player.isJumping = false;
-      lastSpawnTime = 0;
-      spawnInterval = 1200;
-      speedBase = 2.3;
-      shakeActive = false;
-      updateHUD();
     }
+  }
 
-    function updateHUD() {
-      scoreEl.textContent = "النقاط: " + score;
-      levelEl.textContent = "المستوى: " + level;
-      livesEl.textContent = "❤️".repeat(lives);
-      bestEl.textContent = "أفضل: " + bestScore;
-    }
+  // توليد العقبات
+  spawnObstacle(time);
 
-    function levelUpIfNeeded() {
-      const newLevel = 1 + Math.floor(score / 100);
-      if (newLevel > level) {
-        level = newLevel;
-        spawnInterval = Math.max(500, spawnInterval - 80);
-        speedBase += 0.3;
+  // تحريك العقبات ومعالجة التصادم
+  for(let i=obstacles.length-1; i>=0; i--){
+    let o = obstacles[i];
+    o.y += o.speed;
+
+    let pr = {x:player.x, y:player.y, width:player.width, height:player.height};
+    let or = {x:lanes[o.laneIndex]-20, y:o.y, width:o.width, height:o.height};
+
+    const jumping = player.isJumping && player.y < player.baseY - 20;
+
+    if(collide(pr,or)){
+      if(jumping){
+        obstacles.splice(i,1);
+        continue;
       }
-    }
-
-    function spawnObstacle(timestamp) {
-      if (timestamp - lastSpawnTime < spawnInterval) return;
-      lastSpawnTime = timestamp;
-
-      const laneIndex = Math.floor(Math.random() * 3);
-      const isEven = Math.random() < 0.5;
-      const value = isEven
-        ? 2 * (1 + Math.floor(Math.random() * 9)) // زوجي بين 4 و 20
-        : 1 + 2 * Math.floor(Math.random() * 9); // فردي بين 1 و 19
-
-      const speed = speedBase + Math.random() * 1.5;
-
-      obstacles.push({
-        laneIndex,
-        y: -40,
-        width: 40,
-        height: 40,
-        value,
-        isEven,
-        speed,
-      });
-    }
-
-    function movePlayer(dir) {
-      if (!gameRunning) return;
-
-      if (dir === "left" && player.laneIndex > 0) {
-        player.laneIndex--;
-      } else if (dir === "right" && player.laneIndex < lanes.length - 1) {
-        player.laneIndex++;
-      }
-
-      player.targetX = lanes[player.laneIndex] - player.width / 2;
-    }
-
-    function jump() {
-      if (!gameRunning) return;
-      if (player.isJumping) return;
-      player.isJumping = true;
-      player.vy = -9.5; // قوة القفز
-      playJumpSound();
-    }
-
-    function rectsCollide(a, b) {
-      return !(
-        a.x + a.width < b.x ||
-        a.x > b.x + b.width ||
-        a.y + a.height < b.y ||
-        a.y > b.y + b.height
-      );
-    }
-
-    function endGame() {
-      gameRunning = false;
-      if (score > bestScore) {
-        bestScore = score;
-        localStorage.setItem("numberRunnerBest", bestScore.toString());
-      }
-      updateHUD();
-      finalScoreEl.textContent = "نقاطك: " + score;
-      finalBestEl.textContent = "أفضل نتيجة: " + bestScore;
-      playGameOverSound();
-      gameoverScreen.style.display = "flex";
-    }
-
-    // ===== Drawing =====
-    function drawBackground() {
-      ctx.save();
-
-      if (shakeActive) {
-        const now = performance.now();
-        if (now < shakeEndTime) {
-          const dx = (Math.random() - 0.5) * 2 * shakeMagnitude;
-          const dy = (Math.random() - 0.5) * 2 * shakeMagnitude;
-          ctx.translate(dx, dy);
-        } else {
-          shakeActive = false;
-        }
-      }
-
-      // طريق
-      ctx.fillStyle = "#151515";
-      ctx.fillRect(0, 0, GAME_WIDTH, GAME_HEIGHT);
-
-      // المسارات
-      ctx.strokeStyle = "rgba(255,255,255,0.2)";
-      ctx.lineWidth = 2;
-      lanes.forEach((laneX) => {
-        ctx.beginPath();
-        ctx.moveTo(laneX, 0);
-        ctx.lineTo(laneX, GAME_HEIGHT);
-        ctx.stroke();
-      });
-
-      ctx.restore();
-    }
-
-    function drawPlayer() {
-      const x = player.x;
-      const y = player.y;
-      const w = player.width;
-      const h = player.height;
-
-      // جسم (جاكيت)
-      const bodyTop = y + h * 0.25;
-      const bodyHeight = h * 0.55;
-      const bodyWidth = w * 0.6;
-      const bodyX = x + (w - bodyWidth) / 2;
-
-      const grdBody = ctx.createLinearGradient(bodyX, bodyTop, bodyX, bodyTop + bodyHeight);
-      grdBody.addColorStop(0, "#1e88e5");
-      grdBody.addColorStop(1, "#0d47a1");
-      ctx.fillStyle = grdBody;
-      ctx.fillRect(bodyX, bodyTop, bodyWidth, bodyHeight);
-
-      // رأس دائري (ستايل أنمي بسيط)
-      const headRadius = w * 0.4;
-      const headCenterX = x + w / 2;
-      const headCenterY = y + headRadius;
-      ctx.fillStyle = "#ffcc80";
-      ctx.beginPath();
-      ctx.arc(headCenterX, headCenterY, headRadius, 0, Math.PI * 2);
-      ctx.fill();
-
-      // شعر
-      ctx.fillStyle = "#5d4037";
-      ctx.beginPath();
-      ctx.arc(headCenterX, headCenterY - 3, headRadius, Math.PI, 0);
-      ctx.fill();
-
-      // عينين
-      ctx.fillStyle = "#263238";
-      ctx.beginPath();
-      ctx.arc(headCenterX - 6, headCenterY + 2, 2, 0, Math.PI * 2);
-      ctx.arc(headCenterX + 6, headCenterY + 2, 2, 0, Math.PI * 2);
-      ctx.fill();
-
-      // فم بسيط
-      ctx.strokeStyle = "#5d4037";
-      ctx.lineWidth = 1.2;
-      ctx.beginPath();
-      ctx.arc(headCenterX, headCenterY + 8, 6, 0, Math.PI);
-      ctx.stroke();
-
-      // أرجل (بنتلون)
-      ctx.fillStyle = "#212121";
-      const legHeight = h * 0.2;
-      const legWidth = w * 0.22;
-      ctx.fillRect(x + w * 0.2, y + h - legHeight, legWidth, legHeight);
-      ctx.fillRect(x + w * 0.58, y + h - legHeight, legWidth, legHeight);
-
-      // تأثير ظل تحت اللاعب
-      ctx.fillStyle = "rgba(0,0,0,0.4)";
-      const shadowWidth = w * 1.2;
-      const shadowHeight = 8;
-      ctx.beginPath();
-      ctx.ellipse(
-        x + w / 2,
-        player.baseY + h,
-        shadowWidth / 2,
-        shadowHeight,
-        0,
-        0,
-        Math.PI * 2
-      );
-      ctx.fill();
-    }
-
-    function drawObstacles() {
-      obstacles.forEach((o) => {
-        const x = lanes[o.laneIndex] - o.width / 2;
-        const y = o.y;
-
-        ctx.fillStyle = o.isEven ? "#2962ff" : "#d50000";
-        ctx.roundRect(x, y, o.width, o.height, 8);
-        ctx.fill();
-
-        ctx.fillStyle = "#fff";
-        ctx.font = "bold 16px system-ui";
-        ctx.textAlign = "center";
-        ctx.textBaseline = "middle";
-        ctx.fillText(o.value.toString(), x + o.width / 2, y + o.height / 2);
-      });
-    }
-
-    // Polyfill لـ roundRect
-    if (!CanvasRenderingContext2D.prototype.roundRect) {
-      CanvasRenderingContext2D.prototype.roundRect = function (x, y, w, h, r) {
-        r = Math.min(r, w / 2, h / 2);
-        this.beginPath();
-        this.moveTo(x + r, y);
-        this.arcTo(x + w, y, x + w, y + h, r);
-        this.arcTo(x + w, y + h, x, y + h, r);
-        this.arcTo(x, y + h, x, y, r);
-        this.arcTo(x, y, x + w, y, r);
-        this.closePath();
-        return this;
-      };
-    }
-
-    // ===== Game Loop =====
-    let lastTime = 0;
-
-    function gameLoop(timestamp) {
-      if (!gameRunning) return;
-
-      const delta = timestamp - lastTime;
-      lastTime = timestamp;
-
-      // تحريك اللاعب أفقياً نحو المسار (Smooth)
-      player.x += (player.targetX - player.x) * 0.25;
-
-      // فيزياء القفز
-      if (player.isJumping) {
-        player.vy += 0.45; // الجاذبية
-        player.y += player.vy;
-        if (player.y >= player.baseY) {
-          player.y = player.baseY;
-          player.vy = 0;
-          player.isJumping = false;
-        }
-      }
-
-      drawBackground();
-      spawnObstacle(timestamp);
-
-      // تحديث العقبات
-      for (let i = obstacles.length - 1; i >= 0; i--) {
-        const o = obstacles[i];
-        o.y += o.speed;
-
-        const playerRect = {
-          x: player.x,
-          y: player.y,
-          width: player.width,
-          height: player.height,
-        };
-        const obstRect = {
-          x: lanes[o.laneIndex] - o.width / 2,
-          y: o.y,
-          width: o.width,
-          height: o.height,
-        };
-
-        const jumpingHigh = player.isJumping && player.y < player.baseY - 20;
-
-        if (rectsCollide(playerRect, obstRect)) {
-          if (jumpingHigh) {
-            // اعتبرها قفزة فوق العقبة، لا شيء
-            obstacles.splice(i, 1);
-            continue;
-          }
-
-          if (o.isEven) {
-            score += 10;
-            playCollectSound();
-          } else {
-            lives -= 1;
-            playHitSound();
-            startShake();
-            if (lives <= 0) {
-              updateHUD();
-              drawPlayer();
-              drawObstacles();
-              endGame();
-              return;
-            }
-          }
-          obstacles.splice(i, 1);
-          levelUpIfNeeded();
-          updateHUD();
-          continue;
-        }
-
-        // خرجت من الشاشة
-        if (o.y > GAME_HEIGHT + 50) {
-          if (o.isEven) {
-            lives -= 1;
-            playHitSound();
-            startShake();
-            if (lives <= 0) {
-              updateHUD();
-              drawPlayer();
-              drawObstacles();
-              endGame();
-              return;
-            }
-          }
-          obstacles.splice(i, 1);
-          updateHUD();
-        }
-      }
-
-      drawPlayer();
-      drawObstacles();
-
-      requestAnimationFrame(gameLoop);
-    }
-
-    function startGame() {
-      resetGame();
-      startScreen.style.display = "none";
-      gameoverScreen.style.display = "none";
-      gameRunning = true;
-      lastTime = performance.now();
-      requestAnimationFrame(gameLoop);
-    }
-
-    // ===== Controls =====
-    // لوحة المفاتيح
-    window.addEventListener("keydown", (e) => {
-      // أول ضغطة تشغّل الصوت على بعض المتصفحات
-      getAudioCtx();
-
-      if (gameRunning) {
-        if (e.key === "ArrowLeft") {
-          e.preventDefault();
-          movePlayer("left");
-        } else if (e.key === "ArrowRight") {
-          e.preventDefault();
-          movePlayer("right");
-        } else if (e.key === "ArrowUp" || e.code === "Space") {
-          e.preventDefault();
-          jump();
-        }
+      if(o.isEven){
+        score+=10; play(800);
       } else {
-        if (e.key === " " || e.key === "Enter" || e.code === "Space") {
-          e.preventDefault();
-          startGame();
-        }
+        lives--; play(200);
+        if(lives<=0){ endGame(); return; }
       }
-    });
-
-    // أزرار الجوال
-    function addTapListener(btn, handler) {
-      const h = (e) => {
-        e.preventDefault();
-        getAudioCtx();
-        handler();
-      };
-      btn.addEventListener("touchstart", h, { passive: false });
-      btn.addEventListener("click", h);
+      updateHUD();
+      obstacles.splice(i,1);
     }
 
-    addTapListener(leftBtn, () => movePlayer("left"));
-    addTapListener(rightBtn, () => movePlayer("right"));
-    addTapListener(jumpBtn, () => jump());
+    if(o.y > GAME_HEIGHT+40){
+      if(o.isEven){ lives--; play(200); updateHUD(); }
+      obstacles.splice(i,1);
+    }
+  }
 
-    // سحب للأعلى على الشاشة = قفز
-    let touchStartY = null;
-    canvas.addEventListener(
-      "touchstart",
-      (e) => {
-        if (e.touches.length === 1) {
-          touchStartY = e.touches[0].clientY;
-        }
-      },
-      { passive: true }
-    );
-    canvas.addEventListener(
-      "touchend",
-      (e) => {
-        if (touchStartY !== null && e.changedTouches.length === 1) {
-          const dy = e.changedTouches[0].clientY - touchStartY;
-          if (dy < -40) {
-            // سحب للأعلى
-            jump();
-          }
-        }
-        touchStartY = null;
-      },
-      { passive: true }
-    );
+  // رسم
+  drawPlayer();
+  drawObstacles();
 
-    // محاولة تقليل الدبل-تاب زوم
-    let lastTouchEnd = 0;
-    document.addEventListener(
-      "touchend",
-      (e) => {
-        const now = Date.now();
-        if (now - lastTouchEnd <= 300) {
-          e.preventDefault();
-        }
-        lastTouchEnd = now;
-      },
-      { passive: false }
-    );
+  requestAnimationFrame(gameLoop);
+}
 
-    // ===== UI Buttons =====
-    startBtn.addEventListener("click", () => {
-      getAudioCtx();
-      startGame();
-    });
+/* ------------------- نهاية اللعبة ------------------- */
+function endGame(){
+  gameRunning=false;
+  document.getElementById("gameover-screen").style.display="flex";
+  document.getElementById("final-score").textContent="نقاطك: "+score;
+  if(score>bestScore){
+    bestScore=score;
+    localStorage.setItem("bestScore", bestScore);
+  }
+  document.getElementById("final-best").textContent="أفضل نتيجة: "+bestScore;
+  play(140);
+}
 
-    howBtn.addEventListener("click", () => {
-      alert(
-        "طريقة اللعب:\n\n" +
-        "- اللاعب يتحرك بين 3 مسارات.\n" +
-        "- استخدم الأسهم ◀ ▶ أو الأزرار للتحرك.\n" +
-        "- استخدم سهم ↑ أو Space أو زر (قفز) أو سحب للأعلى للقفز.\n" +
-        "- التقط الأعداد الزوجية (صندوق أزرق) لكسب نقاط.\n" +
-        "- تجنّب الأعداد الفردية (صندوق أحمر)، الاصطدام بها أو تفويت عدد زوجي يقلل القلوب.\n" +
-        "- عند الاصطدام تهتز الشاشة ويصدر صوت.\n" +
-        "- عند ارتفاع النقاط يرتفع المستوى وتزيد السرعة."
-      );
-    });
+/* ------------------- بدء اللعبة ------------------- */
+function startGame(){
+  resetGame();
+  document.getElementById("start-screen").style.display="none";
+  document.getElementById("gameover-screen").style.display="none";
+  gameRunning=true;
+  requestAnimationFrame(gameLoop);
+}
 
-    retryBtn.addEventListener("click", () => {
-      startGame();
-    });
+/* ------------------- التحكم ------------------- */
+window.addEventListener("keydown",(e)=>{
+  if(!gameRunning){
+    if(e.key===" "||e.key==="Enter"){ startGame(); }
+    return;
+  }
+  if(e.key==="ArrowLeft") movePlayer("left");
+  if(e.key==="ArrowRight") movePlayer("right");
+  if(e.key==="ArrowUp"||e.key===" ") jump();
+});
 
-    backBtn.addEventListener("click", () => {
-      gameoverScreen.style.display = "none";
-      startScreen.style.display = "flex";
-    });
-  </script>
+document.getElementById("left-btn").onclick=()=>movePlayer("left");
+document.getElementById("right-btn").onclick=()=>movePlayer("right");
+document.getElementById("jump-btn").onclick=()=>jump();
+
+/* ------------------- زر البداية ------------------- */
+document.getElementById("start-btn").onclick=startGame;
+document.getElementById("retry-btn").onclick=startGame;
+document.getElementById("back-btn").onclick=()=>{
+  document.getElementById("gameover-screen").style.display="none";
+  document.getElementById("start-screen").style.display="flex";
+};
+
+</script>
 </body>
 </html>
